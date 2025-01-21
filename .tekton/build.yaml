@@ -104,6 +104,8 @@ spec:
           - -Dsonar.userHome=/tmp/sonar
           - -DskipTests=true
           - -Dsonar.qualitygate.wait=true
+          - -Dsonar.login=admin
+          - -Dsonar.password=sonarqube
       - name: security-scan
         taskRef:
           resolver: cluster
