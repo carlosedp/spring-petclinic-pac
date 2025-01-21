@@ -176,6 +176,8 @@ spec:
             value: spring-petclinic/target
           - name: IMAGE
             value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/spring-petclinic:latest
+          - name: IMAGE_SCRIPTS_URL
+            value: "image:///usr/local/s2i"
         workspaces:
         - name: source
           workspace: source
