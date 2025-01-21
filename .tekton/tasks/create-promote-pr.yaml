@@ -49,7 +49,7 @@ spec:
         git add $(params.COPY_TO_PATH)
         git commit -m "[$(context.taskRun.name)] Promotion from $(params.COPY_FROM_PATH) to $(params.COPY_TO_PATH)"
 
-        git remote add auth-origin $(echo $(params.GIT_REPOSITORY) | sed -E "s#http://(.*)#http://$(params.GIT_USERNAME):$(params.GIT_PASSWORD)@\1#g")
+        git remote add auth-origin $(echo $(params.GIT_REPOSITORY) | sed -E "s#https://(.*)#https://$(params.GIT_USERNAME):$(params.GIT_PASSWORD)@\1#g")
         git push -u auth-origin HEAD
     - name: create-pull-request
       workingDir: $(workspaces.workspace.path)
@@ -62,7 +62,7 @@ spec:
 
         gitea_user = "$(params.GIT_USERNAME)"
         gitea_pwd = "$(params.GIT_PASSWORD)"
-        giteaURL = "http://" + os.popen('oc get svc gitea -o template --template="{{.spec.clusterIP}}"').read() + ":3000"
+        giteaURL = "https://" + os.popen('oc get svc gitea -o template --template="{{.spec.clusterIP}}"').read() + ":3000"
         
         branch_result = open("$(results.branch_name.path)")
         git_branch = branch_result.read()
