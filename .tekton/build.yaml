@@ -5,8 +5,6 @@ metadata:
   annotations:
     pipelinesascode.tekton.dev/on-event: "[pull_request, push]"
     pipelinesascode.tekton.dev/on-target-branch: "cicd-demo"
-    pipelinesascode.tekton.dev/task: "[git-clone:0.8]"
-    pipelinesascode.tekton.dev/task-1: "https://raw.githubusercontent.com/tektoncd/catalog/main/task/maven/0.2/maven.yaml"
     pipelinesascode.tekton.dev/max-keep-runs: "5"
 spec:
   params:
@@ -28,20 +26,27 @@ spec:
     tasks:
       - name: source-clone
         taskRef:
-          name: git-clone
+          resolver: cluster
+          params:
+          - name: name
+            value: git-clone
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         workspaces:
           - name: output
             workspace: source
           - name: basic-auth
             workspace: basic-auth
         params:
-          - name: url
+          - name: URL
             value: $(params.repo_url)
-          - name: revision
+          - name: REVISION
             value: $(params.revision)
-          - name: depth
+          - name: DEPTH
             value: "0"
-          - name: subdirectory
+          - name: SUBDIRECTORY
             value: spring-petclinic
       - name: mvn-config
         taskRef: 
@@ -53,32 +58,46 @@ spec:
           workspace: source
       - name: unit-tests
         taskRef:
-          name: maven
+          resolver: cluster
+          params:
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         runAfter:
           - mvn-config
         workspaces:
         - name: source
           workspace: source
-        - name: maven-settings
+        - name: maven_settings
           workspace: source
         params:
         - name: GOALS
           value: ["package", "-f", "spring-petclinic"]
       - name: code-analysis
         taskRef:
-          name: maven
+          resolver: cluster
+          params:
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         runAfter:
           - unit-tests
         workspaces:
         - name: source
           workspace: source
-        - name: maven-settings
+        - name: maven_settings
           workspace: source
         params:
         - name: GOALS
           value:
           - install
-          - sonar:sonar
+          - org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar
           - -f
           - spring-petclinic
           - -Dsonar.host.url=http://sonarqube:9000
@@ -87,27 +106,41 @@ spec:
           - -Dsonar.qualitygate.wait=true
       - name: security-scan
         taskRef:
-          name: maven
+          resolver: cluster
+          params:
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         runAfter:
           - unit-tests
         workspaces:
         - name: source
           workspace: source
-        - name: maven-settings
+        - name: maven_settings
           workspace: source
         params:
         - name: GOALS
           value: ["--version", "-f", "spring-petclinic"]
       - name: release-app
         taskRef:
-          name: maven
+          resolver: cluster
+          params:
+          - name: name
+            value: maven
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         runAfter:
           - code-analysis
           - security-scan
         workspaces:
         - name: source
           workspace: source
-        - name: maven-settings
+        - name: maven_settings
           workspace: source
         params:
         - name: GOALS
@@ -122,16 +155,22 @@ spec:
           - -DrepositoryId=nexus
       - name: build-image
         taskRef:
-          name: s2i-java
-          kind: ClusterTask
+          resolver: cluster
+          params:
+          - name: name
+            value: s2i-java
+          - name: namespace
+            value: openshift-pipelines
+          - name: kind
+            value: task
         runAfter:
         - release-app
         params:
-          - name: TLSVERIFY
+          - name: TLS_VERIFY
             value: "false"
-          - name: MAVEN_MIRROR_URL
-            value: http://nexus:8081/repository/maven-public/
-          - name: PATH_CONTEXT
+          # - name: MAVEN_MIRROR_URL
+            # value: http://nexus:8081/repository/maven-public/
+          - name: CONTEXT
             value: spring-petclinic/target
           - name: IMAGE
             value: image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/spring-petclinic:latest
@@ -145,7 +184,7 @@ spec:
           name: git-update-deployment
         params:
           - name: GIT_REPOSITORY
-            value: https://github.com/siamaksade/spring-petclinic-config
+            value: https://gitea-d1-cicd.apps.rosa.r53pq-gype7-pvw.hqo4.p3.openshiftapps.com/gitea/spring-petclinic-config
           - name: GIT_USERNAME
             value: gitea
           - name: GIT_PASSWORD
@@ -168,7 +207,7 @@ spec:
           name: create-promote-pull-request
         params:
           - name: GIT_REPOSITORY
-            value: https://github.com/siamaksade/spring-petclinic-config
+            value: https://gitea-d1-cicd.apps.rosa.r53pq-gype7-pvw.hqo4.p3.openshiftapps.com/gitea/spring-petclinic-config
           - name: GIT_USERNAME
             value: gitea
           - name: GIT_PASSWORD
