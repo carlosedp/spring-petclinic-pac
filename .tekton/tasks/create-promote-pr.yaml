@@ -6,7 +6,7 @@ metadata:
     tekton.dev/tags: git
   name: create-promote-pull-request
   labels:
-    app.kubernetes.io/version: '0.1'
+    app.kubernetes.io/version: "0.1"
     operator.tekton.dev/provider-type: community
 spec:
   description: This Task can be used to update image digest in a Git repo using kustomize
@@ -63,7 +63,7 @@ spec:
       script: |
         #!/usr/bin/env python3
 
-        import requests 
+        import requests
         import re
 
         gitea_user = "$(params.GIT_USERNAME)"
@@ -71,7 +71,7 @@ spec:
 
         match = re.match(r'^(https?://[^/]+)', "$(params.GIT_REPOSITORY)")
         giteaURL = match.group(1)
-        
+
         branch_result = open("$(results.branch_name.path)")
         git_branch = branch_result.read()
         branch_result.close()
@@ -81,13 +81,13 @@ spec:
 
         pr_title = "[$(context.taskRun.name)] Promote to STAGE environment"
         pr_body = "TaskRun $(context.taskRun.name)\\nPromoting application from DEV to STAGE environment"
-        data_pr = '{"base": "master","body": "' + pr_body + '","head": "' + git_branch + '","title": "' + pr_title + '"}'
+        data_pr = '{"base": "main","body": "' + pr_body + '","head": "' + git_branch + '","title": "' + pr_title + '"}'
         headers = {'Content-Type': 'application/json'}
-        resp = requests.post(url = giteaURL + "/api/v1/repos/" + gitea_user + "/spring-petclinic-config/pulls", 
-                            headers = headers, 
-                            auth = (gitea_user, gitea_pwd), 
-                            data = data_pr) 
-                             
+        resp = requests.post(url = giteaURL + "/api/v1/repos/" + gitea_user + "/spring-petclinic-config/pulls",
+                            headers = headers,
+                            auth = (gitea_user, gitea_pwd),
+                            data = data_pr)
+
 
         if resp.status_code != 200 and resp.status_code != 201:
           print("Error creating pull-request (status code: {})".format(resp.status_code))
